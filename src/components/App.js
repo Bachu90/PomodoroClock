@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import Clock from './Clock';
 import Settings from './Settings';
-import Alarm from './alarm.mp3';
+import Alarm from './beep.mp3';
 
 class App extends Component {
 
@@ -9,8 +9,8 @@ class App extends Component {
     timeleft: 0,
     current: 'session',
     running: false,
-    session: 60,
-    break: 60
+    session: 1500,
+    break: 300
   }
 
   counter = null;
@@ -21,12 +21,32 @@ class App extends Component {
         this.setState(prevState => ({
           [property]: prevState[property] + 60
         }))
-      } else if (direction === 'minus' && this.state[property] > 0) {
+      } else if (direction === 'minus' && this.state[property] > 60) {
         this.setState(prevState => ({
           [property]: prevState[property] - 60
         }))
       }
     }
+  }
+
+  count = () => {
+    this.counter = setInterval(() => {
+      if (this.state.timeleft > 0) {
+        this.setState(prevState => ({
+          timeleft: prevState.timeleft - 1
+        }))
+      } else {
+        clearInterval(this.counter);
+        const current = this.state.current === 'session' ? 'break' : 'session';
+        this.setState({
+          timeleft: this.state[current],
+          current
+        })
+        document.getElementById('beep').play()
+        this.count()
+      }
+    }, 1000);
+
   }
 
   startCount = () => {
@@ -36,21 +56,7 @@ class App extends Component {
           timeleft: this.state[this.state.current],
         })
       }
-
-      this.counter = setInterval(() => {
-        if (this.state.timeleft > 0) {
-          this.setState(prevState => ({
-            timeleft: prevState.timeleft - 1
-          }))
-        } else {
-          const current = this.state.current === 'session' ? 'break' : 'session';
-          this.setState({
-            timeleft: this.state[current],
-            current
-          })
-          document.getElementById('alarm').play()
-        }
-      }, 1000);
+      this.count()
 
       this.setState({
         running: true
@@ -78,15 +84,17 @@ class App extends Component {
       session: 1500,
       break: 300
     })
+    document.getElementById('beep').pause();
+    document.getElementById('beep').load();
   }
 
   render() {
     return (
       <div className="App">
         <h1>Pomodoro Clock</h1>
-        <Clock current={this.state.current} time={this.state.timeleft} startCount={this.startCount} pauseCount={this.pauseCount} reset={this.reset} />
+        <Clock running={this.state.running} current={this.state.current} time={this.state.timeleft} startCount={this.startCount} pauseCount={this.pauseCount} reset={this.reset} />
         <Settings changeSetting={this.changeSetting} session={this.state.session} break={this.state.break} />
-        <audio src={Alarm} id="alarm"></audio>
+        <audio src={Alarm} id="beep"></audio>
       </div>
     );
   }
